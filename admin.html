@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self'; font-src 'self' https://cdn.jsdelivr.net; form-action 'self'; base-uri 'none'; object-src 'none'">
+  <title>访问数据 · DEMO 管理后台</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.3/dist/css/tabler.min.css">
+  <link rel="stylesheet" href="assets/admin.css?v=20261111-ip-info-fix">
+  <link rel="stylesheet" href="assets/admin-tabler.css?v=20261123-exchange-cards">
+  <script defer src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.3/dist/js/tabler.min.js"></script>
+  <script defer src="assets/admin-localization.js?v=20261124-city-fallback"></script>
+  <script defer src="assets/request-audit-ui.js?v=20261105-layer-sync"></script>
+  <script defer src="assets/admin-clicks.js?v=20261123-exchange-cards"></script>
+  <script defer src="assets/admin.js?v=20261124-ip-research"></script>
+</head>
+<body>
+  <header class="topbar navbar navbar-expand-md">
+    <div class="shell topbar-inner">
+      <a class="brand" href="index.html" aria-label="返回示例交易导航首页"><img src="assets/brand/site-lockup.svg" alt="DEMO 示例交易导航"></a>
+      <span class="admin-badge">仅管理员可见 / 访问后台</span>
+      <button id="theme-toggle" class="quiet-button" type="button" aria-pressed="false">深色模式</button>
+      <button id="logout" class="quiet-button" type="button" hidden>退出登录</button>
+    </div>
+  </header>
+  <main class="shell">
+    <section id="login-view" class="login-layout" aria-labelledby="login-title">
+      <div class="login-intro"><p class="kicker">访问数据 / 01</p><h1 id="login-title">访问记录，<br><span>只给管理员看。</span></h1><p>独立查看访问 IP、具体时间、链接点击和大致地区。新安装从空数据库开始记录逐次明细。</p><div class="intro-line"><span></span><small>DEMO 管理后台 · 私密访问</small></div></div>
+      <form id="login-form" class="login-card" novalidate>
+        <p class="card-eyebrow">管理员登录</p><h2>进入数据后台</h2><p class="muted">输入管理员密码以查看访问明细。</p>
+        <label for="password">管理员密码</label>
+        <div class="password-row"><input id="password" name="password" type="password" autocomplete="current-password" required aria-describedby="login-error"><button id="reveal" type="button" aria-label="显示密码">显示</button></div>
+        <p id="login-error" class="form-error" role="alert"></p>
+        <button id="login-submit" class="primary-button" type="submit">登录后台 <span aria-hidden="true">↗</span></button>
+        <p class="hint">数据保留期限由管理员设置。IP 定位来自网络入口，仅供地区趋势参考，并非精确位置。</p>
+      </form>
+    </section>
+    <section id="dashboard" class="dashboard page-wrapper" aria-labelledby="dashboard-title" hidden>
+      <nav class="admin-nav nav nav-pills" aria-label="后台栏目">
+        <button type="button" class="nav-link active" data-view="overview" aria-current="page">总览</button>
+        <button type="button" class="nav-link" data-view="clicks">点击统计</button>
+        <button type="button" class="nav-link" data-view="ips">IP 访问</button>
+        <button type="button" class="nav-link" data-view="requests">请求日志</button>
+        <button type="button" class="nav-link" data-view="archive">历史归档</button>
+      </nav>
+      <div class="dashboard-head"><div><p class="kicker">访问数据 / 02</p><h1 id="dashboard-title">访问总览</h1><p>按公开 IP 汇总页面访问；同一网络下多人可能共用一个 IP。</p></div><div class="toolbar"><label for="domain">查看域名</label><select id="domain"><option value="all">本站全部</option><option value="example.com">example.com</option></select><label for="range">统计区间</label><select id="range"><option value="1">本 UTC 日</option><option value="7">近 7 天</option><option value="30">近 30 天</option><option value="90" selected>近 90 天</option></select><button id="refresh" class="quiet-button" type="button">刷新数据</button></div></div>
+      <p class="domain-note" data-admin-page="overview">本站全部仅汇总当前站点自己 D1 中的记录；域名前带 www 与不带 www 合并显示。</p>
+      <p id="data-status" class="data-status" data-admin-page="overview" role="status" aria-live="polite"></p>
+      <div class="stat-grid" data-admin-page="overview"><div class="stat card"><span>访问次数</span><strong id="total-visits">—</strong><small>打开页面的次数；请求日志连文件请求也算，所以通常更多</small></div><div class="stat card"><span>不同 IP</span><strong id="unique-ips">—</strong><small>所选时间内按 IP 只算一次，共用网络可能多人同 IP</small></div><div class="stat card"><span>最高访问地区</span><strong id="top-region">—</strong><small>按 IP 估计位置，并非精确地址</small></div><div class="stat card"><span>机房 IP</span><strong id="datacenter-ips">—</strong><small id="datacenter-share">所选时间内的不同 IP 占比</small></div></div>
+      <div class="stat-grid traffic-layers" data-admin-page="overview" aria-label="访问 IP 线索分层"><div class="stat card"><span>疑似真人</span><strong id="layer-human">—</strong><small>IP 数：有非测试返佣点击和浏览器请求，且未见探测</small></div><div class="stat card"><span>机器人与扫描</span><strong id="layer-bot">—</strong><small>IP 数：命中过可疑路径或已知爬虫标识，仅是线索</small></div><div class="stat card"><span>未分类</span><strong id="layer-unknown">—</strong><small>IP 数：证据不足，不强行判定</small></div></div>
+      <p class="table-meta" data-admin-page="overview">三类按 IP 数分层，总和等于“不同 IP”；只用仍保留的请求与点击线索。旧请求清理后可能转入“未分类”，不影响访问次数。</p>
+      <section class="panel card domain-history" data-admin-page="overview" aria-labelledby="history-title"><div class="panel-head"><div><p class="card-eyebrow">旧平台记录</p><h2 id="history-title">历史访问分析</h2></div></div><p>新站暂无旧平台数据；访问记录将在部署并配置数据库后开始累计。</p><div id="history-counts" class="history-counts"></div></section>
+      <section class="panel card domain-history" data-admin-page="overview" aria-labelledby="archive-title"><div class="panel-head"><div><p class="card-eyebrow">长期记录</p><h2 id="archive-title">长期保存的访问数据</h2></div></div><p id="archive-description">这是页面访问量，不是网站请求量。每天只归档已结束的 UTC 日期；今天的访问在上方实时数字中，明天才进入这里。新站从空数据库开始统计。</p><p id="archive-reconcile" class="table-meta"></p><div class="table-scroll"><table class="archive-domain-table"><caption>长期访问量按域名和早期未归属来源分解</caption><thead><tr><th scope="col">域名或来源</th><th scope="col">访问次数</th></tr></thead><tbody id="archive-counts"></tbody></table></div><div id="archive-months" class="archive-months"></div></section>
+      <div class="panels" data-admin-page="overview"><section class="panel card" aria-labelledby="timeline-title"><div class="panel-head"><div><p class="card-eyebrow">访问趋势</p><h2 id="timeline-title">每日访问（UTC 日期）</h2></div><div id="chart-range" class="btn-group" role="group" aria-label="图表时间范围"><button class="btn btn-sm" data-days="7" type="button">7 天</button><button class="btn btn-sm" data-days="30" type="button">30 天</button><button class="btn btn-sm" data-days="90" type="button">90 天</button></div></div><div id="timeline" class="timeline" role="img" aria-label="每日访问量图表"></div><p id="chart-peak-note" class="table-meta"></p></section><section class="panel card" aria-labelledby="regions-title"><div class="panel-head"><div><p class="card-eyebrow">访问地区</p><h2 id="regions-title">地区汇总</h2></div></div><div id="regions" class="region-list"></div></section></div>
+      <section class="panel card ip-panel" data-admin-page="ips" aria-labelledby="ip-title"><div class="panel-head ip-head"><div><p class="card-eyebrow">访问来源</p><h2 id="ip-title">IP 访问明细</h2></div><label class="search-label" for="ip-search"><span>搜索 IP 或地区</span><span class="search-control"><input id="ip-search" type="search" autocomplete="off" placeholder="搜索 IP / 地区"><button id="search-clear" type="button" aria-label="清除 IP 搜索" hidden>清除</button></span></label></div><div class="ip-type-filter" role="group" aria-label="IP 网络类型筛选"><button type="button" data-ip-type="all" aria-pressed="true">全部</button><button type="button" data-ip-type="datacenter" aria-pressed="false">机房</button><button type="button" data-ip-type="broadband" aria-pressed="false">非机房</button><button type="button" data-ip-type="unknown" aria-pressed="false">未知</button></div><div class="ip-backfill"><button id="ip-backfill" class="quiet-button" type="button">回填下一批（最多 100 个 IP）</button><span id="ip-backfill-status" role="status">历史 IP 仅在手动回填时查询 ip-api。</span></div><p id="ip-count" class="table-meta"></p><p class="table-scroll-hint">IP 后显示国家和城市；没有城市时显示已知省州，再查不到则显示“未知地区”。</p><div class="table-scroll"><table><caption>所选区间内各 IP 的中文估计地区、机房标注、访问次数、最近访问时间及记录操作</caption><thead><tr><th scope="col">访问 IP（估计地区）</th><th scope="col">网络类型</th><th scope="col">访问次数</th><th scope="col">最近访问时间</th><th scope="col">记录</th></tr></thead><tbody id="ip-rows"></tbody></table></div><div class="table-footer"><span id="page-status"></span><nav aria-label="IP 明细分页"><label>每页 <select id="ip-page-size"><option>25</option><option>50</option><option>100</option></select></label><button id="previous" type="button">上一页</button><button id="next" type="button">下一页</button><label>第 <input id="ip-jump" type="number" min="1" inputmode="numeric" aria-label="IP 明细页码"> 页</label><button id="ip-jump-go" type="button">跳转</button></nav></div></section>
+      <p class="table-meta">离线 ASN 数据来源：<a href="https://db-ip.com" rel="noopener noreferrer" target="_blank">DB-IP Lite</a>（CC BY 4.0）。</p>
+      <section id="ip-detail" class="panel card detail-panel" data-admin-page="ips" aria-labelledby="detail-title" hidden>
+        <div class="panel-head detail-head"><div><p class="card-eyebrow">访问记录</p><h2 id="detail-title" tabindex="-1">单个 IP 的记录</h2><p id="detail-ip" class="detail-ip"></p></div><button id="detail-close" class="quiet-button" type="button">收起记录</button></div>
+        <p class="detail-explainer">统计区间按 UTC 日期划分；下列逐条时间使用 UTC+8。本站时长是页面前台可见时间的估算，多标签页可能重复计入；离开本站后，在交易所网站待了多久无法统计。</p>
+        <div class="detail-feedback"><p id="detail-status" class="data-status detail-status" role="status" aria-live="polite"></p><button id="detail-retry" class="quiet-button" type="button" hidden>重试读取</button></div>
+        <div id="detail-content" hidden>
+        <div class="detail-metrics"><div><span>本站页面可见时长（约）</span><strong id="detail-duration">—</strong></div><div><span>已保存的访问与点击</span><strong id="detail-total">—</strong></div></div><p id="detail-ip-info" class="ip-evidence"></p>
+          <section class="detail-group" aria-labelledby="detail-links-title"><div class="detail-section-head"><h3 id="detail-links-title">链接点击汇总</h3><small>只统计点击次数，无法统计外站停留</small></div><div id="detail-links" class="link-list"></div></section>
+          <section class="detail-group" aria-labelledby="detail-events-title"><div class="detail-section-head"><h3 id="detail-events-title" tabindex="-1">逐次记录</h3><small>按发生时间从新到旧</small></div><ol id="detail-events" class="event-list"></ol><div class="table-footer detail-footer"><span id="detail-page-status"></span><nav aria-label="单个 IP 记录分页"><button id="detail-previous" type="button">上一页</button><button id="detail-next" type="button">下一页</button></nav></div></section>
+        </div>
+      </section>
+      <section class="panel card request-panel" data-admin-page="requests" aria-labelledby="request-title">
+        <div class="panel-head"><div><p class="card-eyebrow">请求记录</p><h2 id="request-title">请求与探测记录</h2></div></div>
+        <p class="request-explainer">这里显示迁移后写入 D1 的新请求。普通原始日志按 14 天清理，可疑探测保留 90 天；较早趋势留在长期每日汇总，路径/IP 榜只根据仍保留的原始新日志计算。旧库迁入的请求在「历史归档」，合计只计已迁入的部分。请求量与页面访问量是两种计数。Cloudflare 边缘已拦截的请求请到 <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer">安全事件</a>查看。</p>
+        <div class="request-toolbar"><label>起始日期（UTC）<input id="request-from" type="date"></label><label>结束日期（UTC）<input id="request-to" type="date"></label><button id="request-apply" class="quiet-button" type="button">查询请求</button><a id="request-export" class="quiet-button" href="#">导出 CSV</a></div>
+        <p id="request-filter-error" class="form-error" role="alert"></p>
+        <div id="request-metrics" class="request-metrics" aria-live="polite"></div>
+        <div id="request-statuses" class="request-statuses"></div>
+        <div class="request-insights">
+          <details><summary>每日与每小时请求量</summary><div id="request-timeline"></div></details>
+          <details><summary>访问最多的 20 条路径</summary><ol id="request-top-paths"></ol></details>
+          <details><summary>请求最多的 20 个 IP（首末时间、不同路径数）</summary><ol id="request-top-ips"></ol></details>
+          <details><summary>网络运营商汇总</summary><ol id="request-top-asns"></ol></details>
+          <details><summary>国家汇总</summary><ol id="request-top-countries"></ol></details>
+          <details><summary>浏览器与访问程序汇总</summary><ol id="request-top-uas"></ol></details>
+          <details><summary>来源网页汇总</summary><ol id="request-top-sources"></ol></details>
+          <details><summary>可疑路径榜（路径、条数）</summary><ol id="request-scan-paths"></ol></details>
+          <details><summary>可疑来源 IP 榜</summary><ol id="request-scan-ips"></ol></details>
+          <details><summary>突发事件（同一 IP 每分钟超过 30 次）</summary><ol id="request-bursts"></ol></details>
+          <details open><summary>长期每日请求汇总（新日志 + 已迁入历史）</summary><p class="request-explainer">这里是网站请求条数，和总览里的页面访问次数不是同一数字。旧日志从备份分批迁入，合计只计已迁入的部分；来源榜只统计新日志。选择单个域名时，历史旧日志不参与分域名合计。</p><div id="request-archive"></div><div class="table-footer"><span id="request-archive-page"></span><nav aria-label="长期每日汇总分页"><button id="archive-previous" type="button">上一组日期</button><button id="archive-next" type="button">下一组日期</button></nav></div></details>
+        </div>
+        <div class="request-filter" role="group" aria-label="请求记录筛选"><button id="request-all" type="button" aria-pressed="true">全部请求</button><button id="request-suspicious" type="button" aria-pressed="false">可疑路径</button><span class="filter-divider" aria-hidden="true"></span><button class="request-code-filter" data-code="404" type="button" aria-pressed="false">只看 404</button><button class="request-code-filter" data-code="200" type="button" aria-pressed="false">只看 200</button><button class="request-code-filter" data-code="5xx" type="button" aria-pressed="false">只看 5xx</button></div>
+        <p id="request-status" class="table-meta" role="status" aria-live="polite">正在读取请求记录…</p>
+        <ol id="request-rows" class="request-list" aria-label="站点请求和疑似探测，按时间从新到旧"></ol>
+        <div class="table-footer"><span id="request-page-status"></span><nav aria-label="下方请求明细分页"><label>每页 <select id="request-page-size"><option>25</option><option>50</option><option>100</option></select></label><button id="request-previous" type="button">上一页</button><button id="request-next" type="button">下一页</button><label>第 <input id="request-jump" type="number" min="1" inputmode="numeric" aria-label="请求明细页码"> 页</label><button id="request-jump-go" type="button">跳转</button></nav></div>
+      </section>
+      <section class="panel card archive-panel" data-admin-page="archive" aria-labelledby="legacy-title"><p class="card-eyebrow">请求历史</p><h2 id="legacy-title">历史归档</h2><p class="request-explainer">已导入的旧请求可在这里查看。新安装暂无此类记录。与新请求分开存储；默认最新时间在前。</p>
+        <details id="legacy-request-panel" class="legacy-request-panel" open><summary>按时间查看旧库请求</summary>
+          <p class="request-explainer">这里查看旧库迁入的原始请求；域名使用页面上方的选择，其他条件可单独筛选。</p>
+          <div class="request-toolbar"><label>起始日期（UTC）<input id="legacy-from" type="date" ></label><label>结束日期（UTC）<input id="legacy-to" type="date" ></label><label>IP<input id="legacy-ip" type="search" placeholder="精确 IP"></label><label>路径包含<input id="legacy-path" type="search" placeholder="例如 /.env"></label><button id="legacy-apply" class="quiet-button" type="button">筛选归档</button></div>
+          <p id="legacy-status" class="table-meta" role="status"></p><ol id="legacy-rows" class="request-list" aria-label="历史请求记录"></ol>
+          <div class="table-footer"><span id="legacy-page-status"></span><nav aria-label="历史请求分页"><label>每页 <select id="legacy-page-size"><option>25</option><option>50</option><option>100</option></select></label><button id="legacy-previous" type="button">上一页</button><button id="legacy-next" type="button">下一页</button><label>第 <input id="legacy-jump" type="number" min="1" inputmode="numeric" aria-label="历史归档页码"> 页</label><button id="legacy-jump-go" type="button">跳转</button></nav></div>
+        </details>
+      </section>
+      <section class="panel card click-panel" data-admin-page="clicks" aria-labelledby="click-title">
+        <p class="card-eyebrow">返佣链接点击</p><h2 id="click-title">点击统计</h2>
+        <p class="request-explainer">只统计站内交易所返佣卡片的点击跳出行为。点击前可见秒数从本次上线起记录，只累计页面在前台显示的时间，不代表认真阅读；旧点击显示“停留未记录”。旧点击若未保存目标链接，会明确标记。未标记测试的点击也不能据此认定是真人。点击失败不影响打开交易所。</p>
+        <p class="table-meta">口径说明：返佣点击仅计入交易所链接，默认排除已标记的测试点击；联系方式卡片单独统计。原始事件数（visit_events 中所有 kind='click'）还包含站内导航、行情和旧 TG 频道／私信等，不能与本页两项相加直接比较。</p>
+        <label class="click-test-filter"><input id="click-hide-tests" type="checkbox" checked> 隐藏已标记的测试点击</label>
+        <p id="click-status" class="table-meta" role="status" aria-live="polite"></p>
+        <div class="stat-grid click-stats"><div class="stat card"><span>返佣链接点击</span><strong id="click-total">—</strong><small>所选日期、域名内的点击次数</small></div><div class="stat card"><span>点击过的 IP</span><strong id="click-ips">—</strong><small>按 IP 只算一次</small></div><div class="stat card"><span>只访问没点击的 IP</span><strong id="no-click-ips">—</strong><small>与同一日期、域名的页面访问比较</small></div></div>
+        <section class="click-list-section" aria-labelledby="contact-click-title"><h3 id="contact-click-title">联系方式点击</h3>
+          <p class="table-meta">按上方日期、域名和测试点击条件统计。微信、TG 只在打开联系卡片时计数；TG 频道和私信不会重复计入。</p>
+          <div class="stat-grid click-stats" aria-live="polite"><div class="stat card"><span>微信</span><strong id="contact-wechat-clicks">—</strong><small>打开微信联系卡片的次数</small></div><div class="stat card"><span>TG</span><strong id="contact-tg-clicks">—</strong><small>打开 TG 联系卡片的次数</small></div><div class="stat card"><span>推特</span><strong id="contact-twitter-clicks">—</strong><small>点击推特链接的次数</small></div></div>
+          <h3>逐次记录 · 最近在前</h3><p class="table-meta">显示已保存的微信、TG、推特点击及旧 TG 频道、私信点击。IP 可能属于共享网络，不能确定点击者身份。</p>
+          <ol id="contact-rows" class="click-rows" aria-label="联系方式点击记录"></ol>
+          <div class="table-footer"><span id="contact-page-status"></span><nav aria-label="联系方式点击分页"><label>每页 <select id="contact-page-size"><option>25</option><option>50</option><option>100</option></select></label><button id="contact-previous" type="button">上一页</button><button id="contact-next" type="button">下一页</button><label>第 <input id="contact-jump" type="number" min="1" inputmode="numeric" aria-label="联系方式点击页码"> 页</label><button id="contact-jump-go" type="button">跳转</button></nav></div>
+        </section>
+        <section class="click-list-section" aria-labelledby="exchange-click-title"><h3 id="exchange-click-title">各交易所点击</h3><div id="exchange-click-stats" class="stat-grid click-stats exchange-click-stats" aria-live="polite"></div></section>
+        <div class="click-summary-grid"><section><h3>交易所点击排行</h3><ol id="click-ranking" class="click-ranking"></ol></section><section><h3>各域名点击汇总</h3><p class="table-meta">显示所选日期内所有域名；上方域名下拉仅筛选旁边排行和下方明细。</p><div class="table-scroll"><table class="click-domain-table"><thead><tr><th scope="col">域名</th><th scope="col">点击次数</th><th scope="col">点击过的 IP</th></tr></thead><tbody id="click-domain-rows"></tbody></table></div></section></div>
+        <section class="click-list-section"><h3>逐次点击 · 最近在前</h3><ol id="click-rows" class="click-rows"></ol><div class="table-footer"><span id="click-page-status"></span><nav aria-label="点击记录分页"><label>每页 <select id="click-page-size"><option>25</option><option>50</option><option>100</option></select></label><button id="click-previous" type="button">上一页</button><button id="click-next" type="button">下一页</button><label>第 <input id="click-jump" type="number" min="1" inputmode="numeric" aria-label="点击记录页码"> 页</label><button id="click-jump-go" type="button">跳转</button></nav></div></section>
+      </section>
+      <p class="privacy-note" data-admin-page="overview">逐次访问时间、点击及页面可见时长只在开始采集后有记录；旧访问次数无法补出明细。IP 可能是代理或共享网络，地区仅供参考。</p>
+    </section>
+  </main>
+</body>
+</html>
